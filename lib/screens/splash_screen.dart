@@ -326,6 +326,7 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
                 width: 400,
                 height: 60,
                 child: TextField(
+                  controller: _emailController,
                   decoration: InputDecoration(
                     labelStyle: TextStyle(
                       color: Colors.white,
@@ -356,6 +357,7 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
                 width: 400,
                 height: 60,
                 child: TextField(
+                  controller: _passwordController,
                   decoration: InputDecoration(
                     labelStyle: GoogleFonts.poppins(
                       fontSize: 16,
@@ -390,31 +392,15 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
               SizedBox(
                 height: 20,
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ));
-                },
-                child: Container(
-                  width: 400,
-                  height: 60,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(20)),
-                  ),
-                  child: Text(
-                    'Login',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Color(0xFF584A4A),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                child: _isLoading
+                    ? CircularProgressIndicator()
+                    : Text(
+                        "Login",
+                        style: GoogleFonts.poppins(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
               ),
               SizedBox(
                 height: 20,
