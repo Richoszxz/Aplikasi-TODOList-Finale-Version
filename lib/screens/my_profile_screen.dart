@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +26,69 @@ class _MyProfileScreen extends State<MyProfileScreen> {
     final dt = DateTime(now.year, now.month, now.day, waktuTerpilih!.hour,
         waktuTerpilih!.minute);
     return DateFormat('HH:mm').format(dt);
+  }
+
+  Future<void> _logOut(BuildContext context) async {
+    bool? konfirmasiLogOut = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Log Out",
+            style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 19,
+                fontWeight: FontWeight.w700)),
+        content: Text("Are you sure you want to log out?",
+            style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w500)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text("Cancel",
+                style: GoogleFonts.poppins(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => SplashScreen()),
+                (Route<dynamic> route) => false,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Logged out successfully.",
+                      style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500)),
+                  backgroundColor: Colors.redAccent,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Text(
+              "Log Out",
+              style: GoogleFonts.poppins(
+                  color: Colors.red, fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasiLogOut == true) {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SplashScreen(),
+        ),
+      );
+    }
   }
 
   @override
@@ -585,60 +649,7 @@ class _MyProfileScreen extends State<MyProfileScreen> {
             SizedBox(height: 10),
             Center(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // Aksi log out
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text("Log Out",
-                          style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w700)),
-                      content: Text("Are you sure you want to log out?",
-                          style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: Text("Cancel",
-                              style: GoogleFonts.poppins(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500)),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                  builder: (context) => SplashScreen()),
-                              (Route<dynamic> route) => false,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Logged out successfully.",
-                                    style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w500)),
-                                backgroundColor: Colors.redAccent,
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          child: Text("Log Out",
-                              style: GoogleFonts.poppins(
-                                  color: Colors.red,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                onPressed: () => _logOut(context),
                 icon: Icon(Icons.logout, color: Colors.white),
                 label: Text(
                   "Log Out",
