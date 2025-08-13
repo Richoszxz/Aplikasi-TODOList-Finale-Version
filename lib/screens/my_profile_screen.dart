@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:projek2_aplikasi_todolist/screens/splash_screen.dart';
+import 'package:projek2_aplikasi_todolist/widgets/snack_bar.dart';
 
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
@@ -53,22 +54,7 @@ class _MyProfileScreen extends State<MyProfileScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => SplashScreen()),
-                (Route<dynamic> route) => false,
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Logged out successfully.",
-                      style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500)),
-                  backgroundColor: Colors.redAccent,
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              Navigator.of(context).pop(true);
             },
             child: Text(
               "Log Out",
@@ -81,13 +67,18 @@ class _MyProfileScreen extends State<MyProfileScreen> {
     );
 
     if (konfirmasiLogOut == true) {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const SplashScreen(),
-        ),
-      );
+      try {
+        await FirebaseAuth.instance.signOut();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SplashScreen(),
+          ),
+        );
+        successShowTopSnackBar(context, "Logged out successfully.");
+      } catch (_) {
+        failedShowTopSnackBar(context, "Failed to log out.");
+      }
     }
   }
 

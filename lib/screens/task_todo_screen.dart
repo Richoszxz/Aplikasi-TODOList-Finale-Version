@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:intl/intl.dart';
 import 'package:projek2_aplikasi_todolist/screens/task_done_screen.dart';
+import 'package:projek2_aplikasi_todolist/widgets/snack_bar.dart';
+import 'package:projek2_aplikasi_todolist/widgets/category.dart';
 
 class TaskTodoScreen extends StatefulWidget {
   const TaskTodoScreen({super.key});
@@ -13,64 +18,31 @@ class TaskTodoScreen extends StatefulWidget {
 
 class _TaskTodoScreenState extends State<TaskTodoScreen> {
   bool fungsiCheckBox = false;
+  final userId = FirebaseAuth.instance.currentUser!.uid;
 
-  // Data list task
-  List<Map<String, dynamic>> tasks = [
-    {
-      'icon': Icons.cleaning_services, //Icon Kegiatan
-      'title': 'Do The Dishes', //Judul tugasa
-      'subtitle': '23 Juli 2025, 19:00', //Waktu Tugas
-      'done': false, //Status Checklist
-    },
-    {
-      'icon': Icons.directions_run,
-      'title': 'Jogging',
-      'subtitle': '23 Juli 2025, 05:00',
-      'done': false,
-    },
-    {
-      'icon': Icons.group,
-      'title': 'Bermain bersama teman',
-      'subtitle': '23 Juli 2025, 19:00',
-      'done': false,
-    },
-    {
-      'icon': Icons.mosque,
-      'title': "Sholawat Rutin Habis Isya'",
-      'subtitle': '24 Juli 2025, 20:00',
-      'done': false,
-    },
-    {
-      'icon': Icons.shopping_bag,
-      'title': 'Beli Skincare di Sociolla',
-      'subtitle': '25 Juli 2025, 10:00',
-      'done': false,
-    },
-  ];
-
-  void showDeleteDialog(int index) {
+  void showDeleteDialog(String docId) {
     AwesomeDialog(
       context: context,
-      dialogType: DialogType.question, 
-      animType: AnimType.bottomSlide, 
-      title: "Confirm Delete Data", 
-      desc: "Are You Sure You Want To Delete Data?", 
-      showCloseIcon: true, 
-      btnOkOnPress: () {
-        setState(() {
-          tasks.removeAt(index); 
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Data Sudah Terhapus"), 
-            backgroundColor: Color(0xFF15FF00),
-            duration: Duration(seconds: 2), 
-          ),
-        );
+      dialogType: DialogType.question,
+      animType: AnimType.bottomSlide,
+      title: "Confirm Delete Data",
+      desc: "Are You Sure You Want To Delete Data?",
+      showCloseIcon: true,
+      btnOkOnPress: () async {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('tasks')
+              .doc(docId)
+              .delete();
+          successShowTopSnackBar(context, "Task deleted successfully.");
+        } catch (_) {
+          failedShowTopSnackBar(context, "Failed deleted task.");
+        }
       },
-      btnCancelOnPress: () {}, 
-    ).show(); 
+      btnCancelOnPress: () {},
+    ).show();
   }
 
   @override
@@ -133,77 +105,135 @@ class _TaskTodoScreenState extends State<TaskTodoScreen> {
 
             // Task List
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(30),
-                child: ListView.builder(
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return Column(
-                      children: [
-                        Slidable(
-                          key: ValueKey(index),
-                          endActionPane: ActionPane(
-                            motion: const DrawerMotion(),
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) => showDeleteDialog(index),
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                                icon: Icons.delete,
-                                label: 'Delete',
-                              ),
-                            ],
-                          ),
-                          child: Card(
-                            color: const Color(0xFFA0D7C8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: ListTile(
-                              leading: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: Icon(task['icon'], size: 30),
-                              ),
-                              title: Text(
-                                task['title'],
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF584A4A),
-                                ),
-                              ),
-                              subtitle: Text(task['subtitle']),
-                              trailing: Checkbox(
-                                value: task['done'],
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    tasks[index]['done'] = value ?? false;
-                                  });
-                                  if (value == true) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const TaskDoneScreen(),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId)
+                    .collection('tasks')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
                     );
-                  },
-                ),
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Text("Task not yet."),
+                    );
+                  }
+
+                  final docs = snapshot.data!.docs;
+
+                  return Padding(
+                    padding: EdgeInsets.all(30),
+                    child: ListView.builder(
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final task = docs[index].data() as Map<String, dynamic>;
+                        final docId = docs[index].id;
+                        final Timestamp dateTimeStamp = task['date'] ?? '';
+                        final DateTime dateTime = dateTimeStamp.toDate();
+                        final String formattedDate = DateFormat('d MMM yyyy').format(dateTime);
+                        final time = task['time'] ?? '';
+                        final priority = task['priority'] ?? 3; // default low
+                        final categoryKey = (task['category'] ?? '').toString();
+
+                        String priorityText;
+                        switch (priority) {
+                          case 1:
+                            priorityText = "High";
+                            break;
+                          case 2:
+                            priorityText = "Mid";
+                            break;
+                          default:
+                            priorityText = "Low";
+                            break;
+                        }
+
+                        // Subtitle format: "14 Aug 2025 • 07:00 • High"
+                        final subtitleText = "$formattedDate • $time • $priorityText";
+
+                        return Column(
+                          children: [
+                            Slidable(
+                              key: ValueKey(docId),
+                              endActionPane: ActionPane(
+                                motion: const DrawerMotion(),
+                                children: [
+                                  SlidableAction(
+                                    onPressed: (_) => showDeleteDialog(docId),
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    icon: Icons.delete,
+                                    label: 'Delete',
+                                  ),
+                                ],
+                              ),
+                              child: Card(
+                                color: const Color(0xFFA0D7C8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: ListTile(
+                                  leading: Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                    ),
+                                    child: Icon(
+                                        categoryIcon[categoryKey] ?? Icons.apps,
+                                        size: 30),
+                                  ),
+                                  title: Text(
+                                    task['title'] ?? '',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF584A4A),
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    subtitleText,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      color: const Color(0xFF584A4A),
+                                    ),
+                                  ),
+                                  trailing: Checkbox(
+                                    value: task['status'] ?? false,
+                                    onChanged: (bool? value) {
+                                      FirebaseFirestore.instance
+                                          .collection('tasks')
+                                          .doc(docId)
+                                          .update({'status': value ?? false});
+                                      if (value == true) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const TaskDoneScreen(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ],

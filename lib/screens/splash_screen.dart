@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projek2_aplikasi_todolist/widgets/snack_bar.dart';
 
 // REGISTER BOTTOM MODAL SHEET
 class RegisterModalSheet extends StatefulWidget {
@@ -12,6 +14,8 @@ class RegisterModalSheet extends StatefulWidget {
 }
 
 class _RegisterModalSheetState extends State<RegisterModalSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _noteleponController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -30,25 +34,40 @@ class _RegisterModalSheetState extends State<RegisterModalSheet> {
 
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      Navigator.push(
+
+      // GET USER ID
+      String userId = userCredential.user!.uid;
+
+      // MAPPING COLLECTION DAN DOC ID SESUAI USER ID PADA CLOUD FIRESTORE
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'username' : _usernameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'noTelepon' : _noteleponController.text.trim(),
+        'bio' : '',
+        'tanggalLahir' : null,
+        'createdAt' : FieldValue.serverTimestamp(),
+        'updatedAt' : FieldValue.serverTimestamp(),
+      });
+
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => const HomeScreen(),
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? "Register Gagal !"),
-        ),
-      );
+      successShowTopSnackBar(context, "Register Berhasil !");
+    } on FirebaseAuthException catch (_) {
+      failedShowTopSnackBar(context, "Register Gagal, Silahkan Coba Lagi !");
     }
     setState(() => _isLoading = false);
   }
+
+  bool _isObscurePass = true;
+  bool _isObscureConfirm = true;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +75,7 @@ class _RegisterModalSheetState extends State<RegisterModalSheet> {
       children: [
         Container(
           width: 440,
-          height: 550,
+          height: 650,
           decoration: BoxDecoration(
             color: Color(0xFFA0D7C8),
             borderRadius: BorderRadius.only(
@@ -64,192 +83,320 @@ class _RegisterModalSheetState extends State<RegisterModalSheet> {
               topLeft: Radius.circular(30),
             ),
           ),
-          child: Column(
-            children: [
-              SizedBox(height: 30),
-              Text(
-                'Create Account',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF584A4A),
-                ),
-              ),
-              SizedBox(
-                height: 25,
-              ),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600),
-                    hintText: "infoexample.com",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "username/email",
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                SizedBox(height: 30),
+                Text(
+                  'Create Account',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF584A4A),
                   ),
                 ),
-              ),
-              SizedBox(height: 20),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _noteleponController,
-                  decoration: InputDecoration(
-                    labelStyle: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600),
-                    hintText: "08123456789",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "no telepon",
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
-                  ),
+                SizedBox(
+                  height: 25,
                 ),
-              ),
-              SizedBox(height: 20),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelStyle: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600),
-                    hintText: "password",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "password",
-                    suffixIcon: InkWell(
-                      onTap: () {},
-                      child: Icon(
-                        Icons.visibility_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _konfirmasiPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelStyle: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600),
-                    hintText: "confirm password",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "confirm password",
-                    suffixIcon: InkWell(
-                      onTap: () {},
-                      child: Icon(
-                        Icons.visibility_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _register,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : Text(
-                        "Register",
-                        style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold, fontSize: 20),
-                      ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Color(0xFFA0D7C8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(20),
-                  ),
-                  minimumSize: Size(400, 60),
-                  elevation: 0,
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Already have account?',
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _usernameController,
                     style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF584A4A)),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                      hintText: "Hirai Momo",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "username",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
                   ),
-                  Text(
-                    'Login',
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _emailController,
                     style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white),
-                  )
-                ],
-              ),
-            ],
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                      hintText: "infoexample.com",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "email",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _noteleponController,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                      hintText: "08123456789",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "no telepon",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: _isObscurePass,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600),
+                      hintText: "password",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "password",
+                      suffixIcon: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isObscurePass = !_isObscurePass;
+                          });
+                        },
+                        child: Icon(
+                          _isObscurePass ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _konfirmasiPasswordController,
+                    obscureText: _isObscureConfirm,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                      hintText: "confirm password",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "confirm password",
+                      suffixIcon: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isObscureConfirm = !_isObscureConfirm;
+                          });
+                        },
+                        child: Icon(
+                          _isObscureConfirm ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () {
+                    if (_formKey.currentState!.validate()) {
+                      _register();
+                    }
+                  },
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : Text(
+                          "Register",
+                          style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold, fontSize: 20),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Color(0xFFA0D7C8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(20),
+                    ),
+                    minimumSize: Size(400, 60),
+                    elevation: 0,
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Already have account?',
+                      style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF584A4A)),
+                    ),
+                    Text(
+                      'Login',
+                      style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    )
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -266,6 +413,7 @@ class LoginModalSheet extends StatefulWidget {
 }
 
 class _LoginModalSheetState extends State<LoginModalSheet> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -283,15 +431,14 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
           builder: (context) => const HomeScreen(),
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? "Login Gagal !"),
-        ),
-      );
+      successShowTopSnackBar(context, "Login Berhasil");
+    } on FirebaseAuthException catch (_) {
+      failedShowTopSnackBar(context, "Login Gagal, Silahkan Coba Lagi !");
     }
     setState(() => _isLoading = false);
   }
+
+  bool _isObscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -306,127 +453,182 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
               topLeft: Radius.circular(30),
             ),
           ),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 30,
-              ),
-              Text(
-                'Login',
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF584A4A),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 30,
                 ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelStyle: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    hintText: "ricko11@gmail.com",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "Username/email",
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
+                Text(
+                  'Login',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF584A4A),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              SizedBox(
-                width: 400,
-                height: 60,
-                child: TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelStyle: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.white, width: 3.0),
-                    ),
-                    hintText: "12345678",
-                    hintStyle: TextStyle(color: Colors.white),
-                    labelText: "password",
-                    suffixIcon: InkWell(
-                      onTap: () {},
-                      child: Icon(
-                        Icons.visibility_outlined,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.white,
-                        width: 3.0,
-                      ),
-                    ),
-                  ),
+                SizedBox(
+                  height: 10,
                 ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                child: _isLoading
-                    ? CircularProgressIndicator()
-                    : Text(
-                        "Login",
-                        style: GoogleFonts.poppins(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Don’t have an account?',
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _emailController,
                     style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF584A4A),
-                    ),
-                  ),
-                  Text(
-                    'Register',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
                       color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
-                  )
-                ],
-              ),
-            ],
+                    decoration: InputDecoration(
+                      labelStyle: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      hintText: "ricko11@gmail.com",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "Username/email",
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                SizedBox(
+                  width: 400,
+                  height: 60,
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: _isObscure,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: InputDecoration(
+                      labelStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.white, width: 3.0),
+                      ),
+                      hintText: "12345678",
+                      hintStyle: TextStyle(color: Colors.white),
+                      labelText: "password",
+                      suffixIcon: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isObscure = !_isObscure;
+                          });
+                        },
+                        child: Icon(
+                          _isObscure ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.white,
+                          width: 3.0,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Wajib diisi";
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () {
+                    if (_formKey.currentState!.validate()) {
+                      _login();
+                    }
+                  },
+                  child: _isLoading
+                      ? CircularProgressIndicator()
+                      : Text(
+                          "Login",
+                          style: GoogleFonts.poppins(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Color(0xFFA0D7C8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(20)
+                    ),
+                    minimumSize: Size(400, 60),
+                    elevation: 0,
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Don’t have an account?',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF584A4A),
+                      ),
+                    ),
+                    Text(
+                      'Register',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
           ),
         )
       ],
@@ -434,8 +636,14 @@ class _LoginModalSheetState extends State<LoginModalSheet> {
   }
 }
 
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
