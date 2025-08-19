@@ -208,8 +208,10 @@ class _TaskTodoScreenState extends State<TaskTodoScreen> {
                                   ),
                                   trailing: Checkbox(
                                     value: task['status'] ?? false,
-                                    onChanged: (bool? value) {
-                                      FirebaseFirestore.instance
+                                    onChanged: (bool? value) async {
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(userId)
                                           .collection('tasks')
                                           .doc(docId)
                                           .update({'status': value ?? false});
