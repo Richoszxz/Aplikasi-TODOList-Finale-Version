@@ -15,7 +15,6 @@ class TaskDoneScreen extends StatelessWidget {
         .doc(user)
         .collection('tasks')
         .where('status', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
@@ -142,8 +141,6 @@ class TaskDoneScreen extends StatelessWidget {
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xFF584A4A),
-                                    decoration:
-                                        TextDecoration.lineThrough, // done
                                   ),
                                 ),
                                 subtitle: Text(
@@ -156,7 +153,7 @@ class TaskDoneScreen extends StatelessWidget {
                                 ),
                                 trailing: IgnorePointer(
                                   child: Checkbox(
-                                    value: task['status'] ?? true,
+                                    value: task['status'],
                                     onChanged: (_) {} // disable checkbox
                                   ),
                                 ),

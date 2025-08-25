@@ -19,7 +19,7 @@ dependencies:
   google_fonts: any
   intl: any
   shared_preferences: ^2.2.2
-  syncfusion_flutter_calendar: ^20.1.57
+  syncfusion_flutter_calendar: ^30.2.6
 
 dev_dependencies:
   flutter_lints: ^4.0.0

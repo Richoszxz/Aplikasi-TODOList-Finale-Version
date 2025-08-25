@@ -110,7 +110,7 @@ class _TaskTodoScreenState extends State<TaskTodoScreen> {
                     .collection('users')
                     .doc(userId)
                     .collection('tasks')
-                    .orderBy('createdAt', descending: true)
+                    .where('status', isEqualTo: false)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {

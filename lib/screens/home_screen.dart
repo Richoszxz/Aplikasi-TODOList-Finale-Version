@@ -295,7 +295,7 @@ class HomeScreen extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const CalenderScreen(),
+                                      builder: (context) => const CalendarScreen(),
                                     ),
                                   );
                                 },

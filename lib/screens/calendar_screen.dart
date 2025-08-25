@@ -1,290 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-class CalenderScreen extends StatefulWidget {
-  const CalenderScreen({super.key});
+class CalendarScreen extends StatefulWidget {
+  const CalendarScreen({super.key});
 
   @override
-  State<CalenderScreen> createState() => _CalenderScreenState();
+  State<CalendarScreen> createState() => _TaskCalendarSfScreenState();
 }
 
-class _CalenderScreenState extends State<CalenderScreen> {
+class _TaskCalendarSfScreenState extends State<CalendarScreen> {
+  DateTime _selectedDate = DateTime.now();
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUser() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    return FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _getTasksForDate() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final start =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final end = start.add(const Duration(days: 1));
+
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("tasks")
+        .where("date", isGreaterThanOrEqualTo: start)
+        .where("date", isLessThan: end)
+        .orderBy("date", descending: true)
+        .snapshots();
+  }
+
+  void _onSelectionChanged(CalendarSelectionDetails details) {
+    setState(() {
+      _selectedDate = details.date ?? DateTime.now();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final days = ['27', '28', '29', '30', '31', '1', '2'];
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Today',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            color: Color(0xFF584A4A),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            size: 24,
-            color: Color(0xFF584A4A),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          "Task Calendar",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Productive Day, Richo',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF584A4A),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              'July, 29 2025',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF584A4A),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 30,
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(7, (index) {
-                return index == 2
-                    ? CircleAvatar(
-                        backgroundColor: Color(0xFFA0D7C8),
-                        radius: 18.0,
-                        child: Text(
-                          days[index],
-                          style: TextStyle(
-                            fontWeight: index == 2
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: Color(0xFF584A4A),
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : Text(
-                        days[index],
-                        style: TextStyle(
-                          fontWeight:
-                              index == 2 ? FontWeight.bold : FontWeight.normal,
-                          color: index == 2 ? Colors.black : Colors.grey,
-                          fontSize: 16,
-                        ),
-                      );
-              }),
-            ),
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
+      body: StreamBuilder(
+          stream: getUser(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return const Center(child: Text("Terjadi error"));
+            }
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Center(child: Text("User data not found"));
+            }
+
+            final userData = snapshot.data!.data()!;
+            final usernameDisplay = userData['username'] ?? 'User';
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 368,
-                  height: 71,
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 15),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFA0D7C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '5:30 am',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF584A4A),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          'Do the dishes',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF584A4A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  "Productive Day, ${usernameDisplay}",
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                 ),
+                Text(
+                  DateFormat.yMMMMd().format(_selectedDate),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  width: 368,
-                  height: 71,
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 15),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFA0D7C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '6:00 am',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF584A4A),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          'Run with family',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF584A4A),
-                          ),
-                        ),
-                      ),
-                    ],
+                  height: 250,
+                  child: SfCalendar(
+                    view: CalendarView.month,
+                    showNavigationArrow: true,
+                    onSelectionChanged: _onSelectionChanged,
+                    todayHighlightColor: Colors.teal,
+                    selectionDecoration: BoxDecoration(
+                      color: Colors.teal.withOpacity(0.3),
+                      border: Border.all(color: Colors.teal, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-                SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  width: 368,
-                  height: 71,
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 15),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFA0D7C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '8:00 am',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF584A4A),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          'Take a bath',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF584A4A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  width: 368,
-                  height: 71,
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 15),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFA0D7C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '1:00 pm',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF584A4A),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          'Meet with friend',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF584A4A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  width: 368,
-                  height: 71,
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 15),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFA0D7C8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        '2:45 pm',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Color(0xFF584A4A),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Text(
-                          'Pray',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF584A4A),
-                          ),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 12),
+                Expanded(
+                  child: StreamBuilder(
+                    stream: _getTasksForDate(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(
+                            child: Text("No tasks for this day"));
+                      }
+
+                      final tasks = snapshot.data!.docs;
+
+                      return ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = tasks[index].data();
+                          final time = task["time"] ?? "";
+                          return Container(
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.teal[200],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  time,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(task["title"] ?? ""),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
+            );
+          }),
     );
   }
 }
