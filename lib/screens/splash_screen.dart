@@ -22,6 +22,7 @@ class _RegisterModalSheetState extends State<RegisterModalSheet> {
   final _konfirmasiPasswordController = TextEditingController();
   bool _isLoading = false;
 
+  // FUNGSI HANDLER REGISTER SUBMIT KE DATABASE
   Future<void> _register() async {
     if (_konfirmasiPasswordController.text != _passwordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(

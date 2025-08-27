@@ -132,67 +132,96 @@ class HomeScreen extends StatelessWidget {
                   // Content
                   Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'My Task',
-                          style: GoogleFonts.poppins(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF584A4A),
-                          ),
-                        ),
+                    child: StreamBuilder(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .collection('tasks')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return const Center(child: Text("Terjadi error"));
+                          }
+                          if (!snapshot.hasData) {
+                            return const Center(child: Text("Belum ada task"));
+                          }
 
-                        const SizedBox(height: 12),
+                          // Hitung task berdasarkan status
+                          final allTasks = snapshot.data!.docs;
+                          final todoTasks = allTasks
+                              .where((doc) => doc['status'] == false)
+                              .toList();
+                          final doneTasks = allTasks
+                              .where((doc) => doc['status'] == true)
+                              .toList();
 
-                        // To Do Card
-                        _buildTaskCard(
-                          context,
-                          icon: Icons.schedule,
-                          title: "To Do",
-                          subtitle: "5 Task Now",
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TaskTodoScreen()),
-                          ),
-                          screenWidth: screenWidth,
-                        ),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'My Task',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF584A4A),
+                                ),
+                              ),
 
-                        const SizedBox(height: 16),
+                              const SizedBox(height: 12),
 
-                        // Done Card
-                        _buildTaskCard(
-                          context,
-                          icon: Icons.check_circle_outline,
-                          title: "Done",
-                          subtitle: "5 Task Now | 3 Task Done",
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TaskDoneScreen()),
-                          ),
-                          screenWidth: screenWidth,
-                        ),
+                              // To Do Card
+                              _buildTaskCard(
+                                context,
+                                icon: Icons.schedule,
+                                title: "To Do",
+                                subtitle: "${todoTasks.length} Task Now",
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const TaskTodoScreen()),
+                                ),
+                                screenWidth: screenWidth,
+                              ),
 
-                        const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                        // Calendar Card
-                        _buildTaskCard(
-                          context,
-                          icon: Icons.calendar_month,
-                          title: "Calendar Appointment",
-                          subtitle: "",
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const CalendarScreen()),
-                          ),
-                          screenWidth: screenWidth,
-                        ),
-                      ],
-                    ),
+                              // Done Card
+                              _buildTaskCard(
+                                context,
+                                icon: Icons.check_circle_outline,
+                                title: "Done",
+                                subtitle: "${todoTasks.length} Task Now | ${doneTasks.length} Task Done",
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const TaskDoneScreen()),
+                                ),
+                                screenWidth: screenWidth,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Calendar Card
+                              _buildTaskCard(
+                                context,
+                                icon: Icons.calendar_month,
+                                title: "Calendar Appointment",
+                                subtitle: "",
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const CalendarScreen()),
+                                ),
+                                screenWidth: screenWidth,
+                              ),
+                            ],
+                          );
+                        }),
                   ),
 
                   const SizedBox(height: 10),

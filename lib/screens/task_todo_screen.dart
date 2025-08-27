@@ -88,7 +88,7 @@ class _TaskTodoScreenState extends State<TaskTodoScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'July, 25, 2025',
+                          DateFormat('MMMM d, yyyy').format(DateTime.now()),
                           style: GoogleFonts.poppins(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
