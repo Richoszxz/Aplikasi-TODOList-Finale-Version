@@ -25,11 +25,7 @@ class _RegisterModalSheetState extends State<RegisterModalSheet> {
   // FUNGSI HANDLER REGISTER SUBMIT KE DATABASE
   Future<void> _register() async {
     if (_konfirmasiPasswordController.text != _passwordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password tidak sama!"),
-        ),
-      );
+      successShowTopSnackBar(context, "Password tidak sama !");
       return;
     }
 

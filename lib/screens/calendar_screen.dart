@@ -73,11 +73,11 @@ class _TaskCalendarSfScreenState extends State<CalendarScreen> {
               children: [
                 Text(
                   "Productive Day, ${usernameDisplay}",
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 26),
                 ),
                 Text(
                   DateFormat.yMMMMd().format(_selectedDate),
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -116,6 +116,8 @@ class _TaskCalendarSfScreenState extends State<CalendarScreen> {
                           final task = tasks[index].data();
                           final time = task["time"] ?? "";
                           return Container(
+                            width: double.infinity,
+                            height: 60,
                             margin: const EdgeInsets.symmetric(
                                 vertical: 6, horizontal: 16),
                             padding: const EdgeInsets.all(12),
